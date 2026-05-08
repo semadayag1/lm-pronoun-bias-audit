@@ -21,12 +21,5 @@
     "AI in education",
     "writing studies",
     "digital humanities"
-  ],
-  "related_identifiers": [
-    {
-      "identifier": "https://github.com/semadayag1/lm-pronoun-bias-audit",
-      "relation": "isSupplementTo",
-      "resource_type": "software"
-    }
   ]
 }
