@@ -10,7 +10,7 @@ Sophia Madayag
 
 Department of English & Modern Languages, Cal Poly Pomona
 
-Email: semadayag@cpp.edu
+Email: semadayag@gmail.com
 
 ## Recommended Preprint Server
 
