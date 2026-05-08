@@ -1,0 +1,550 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{times}
+\usepackage{latexsym}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{multirow}
+\usepackage{xcolor}
+\usepackage{url}
+\usepackage[hidelinks]{hyperref}
+\usepackage{natbib}
+\usepackage{tabularx}
+\usepackage{geometry}
+\geometry{margin=1in}
+
+\title{When Pronouns Change the Comment:\\ Auditing Gendered Patterns in LLM Writing Feedback}
+
+\author{
+  Sophia Madayag \\
+  Department of English \& Modern Languages \\
+  Cal Poly Pomona \\
+  \texttt{semadayag@cpp.edu}
+}
+
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Feedback in a first-year writing class is not only a correction sheet.
+It can also tell students what kind of writer a reader thinks they are.
+As LLM tools become more common for tutoring and draft response, this paper tests a narrow version of a larger concern: does automated writing feedback change when the only prompt difference is a student's stated pronouns?
+I submitted five stimulus essays written by first-year students to three commercial LLMs---OpenAI GPT-5.2, Anthropic Claude Sonnet 4.5, and Google Gemini 3 Pro Preview---under he/him and she/her conditions.
+Each essay--model--condition cell was repeated 50 times at temperature 0.7, producing 1{,}500 feedback responses.
+The analysis measured nine text features, including length, sentiment, lexical diversity, warmth and competence vocabulary, hedging and directive language, and recurring phrases.
+After Benjamini-Hochberg false discovery rate correction, eight condition differences remained statistically significant ($q < 0.05$), with small effect sizes (Cohen's $d = 0.10$--$0.29$).
+The results did not point in one simple direction.
+Claude produced more positive sentiment for she/her prompts but more warmth-coded vocabulary for he/him prompts.
+GPT-5.2 used more competence vocabulary and more hedging language for she/her prompts, a pattern I tentatively call ``benevolent hedging.''
+Gemini had no measured differences that survived correction.
+I treat these findings as early evidence, not as a final claim about LLMs or gendered feedback.
+The study uses only five constructed stimulus essays, one prompt template, and mostly lexicon-based measures.
+One of the strongest essay-level effects also comes from an essay whose topic overlaps with the warmth lexicon.
+The dataset and code are included so that the results can be checked, questioned, and extended.
+\end{abstract}
+
+% ============================================================
+\section{Introduction}
+\label{sec:intro}
+% ============================================================
+
+Large Language Models (LLMs) are no longer outside the writing classroom.
+Students can use them for draft feedback before meeting an instructor, and instructors may use them as tutoring or revision-support tools \citep{kasneci2023chatgpt}.
+In first-year composition, that shift matters because feedback is one of the main places where students learn what counts as strong writing.
+It is also where they learn something less formal but still important: how their voice is being received.
+
+Writing studies has long treated feedback as more than a neutral transfer of advice.
+\citet{sommers1982responding} is not a gender-bias study, but it is useful here because it shows how instructor comments can redirect, appropriate, or reshape a student's draft.
+Other work speaks more directly to identity and evaluation.
+\citet{harber2012positive} described a ``positive feedback bias,'' where evaluators give less critical feedback to students from stereotyped groups.
+\citet{trix2003exploring} found gendered language patterns in recommendation letters, with letters for women more often emphasizing communal traits and letters for men more often emphasizing agentic ones.
+Together, these studies make it reasonable to ask whether automated feedback systems also shift their tone or emphasis when they receive identity cues.
+
+This paper does not assume that LLMs ``think'' like human instructors.
+The question is more practical than that.
+If a feedback system sees a student's pronouns, does its response change in measurable ways?
+A single response may not matter much.
+Repeated across assignments, courses, or writing programs, even small differences could become part of a student's experience of feedback.
+
+Prior work has studied gendered recommendation-letter generation \citep{wan2023kelly}, occupational stereotyping \citep{kotek2023gender}, and gender associations in word embeddings \citep{bolukbasi2016man}.
+Less work has focused on LLM-generated \emph{writing feedback}, where tone, encouragement, directness, and revision advice all matter at once.
+The question here is deliberately small: \textbf{when the only variable in a feedback prompt is the student's stated pronouns (he/him vs.\ she/her), do large commercial LLMs produce measurably different writing feedback?}
+Following \citet{blodgett2020language}, I use ``bias'' in a narrow operational sense: statistically detectable differences in automated text features between two prompt conditions that differ only by stated pronouns.
+A fuller bias statement appears in Section~\ref{sec:bias-statement}.
+
+The study contributes three things:
+\begin{enumerate}
+    \item a controlled audit design for isolating pronoun effects across three LLMs, five student-authored stimulus essays, and 50 replications per cell ($N = 1{,}500$);
+    \item eight statistically significant condition differences after FDR correction, including a GPT-5.2 pattern that combines competence language with hedging language in she/her responses; and
+    \item a release package with the dataset, essays, scripts, and reports.
+\end{enumerate}
+
+The limits are just as important as the findings.
+Five constructed essays and one prompt template cannot stand in for all writing classrooms, all students, or all LLM feedback systems.
+I read the results as a starting point for larger work, not as a settled account of gender bias in automated writing feedback.
+
+% ============================================================
+\section{Related Work}
+\label{sec:related}
+% ============================================================
+
+\paragraph{Gender bias in writing and evaluation.}
+This project starts from a writing-studies assumption: feedback is a social act, not just a list of corrections.
+Readers respond to a text, but they also respond to what they think they know about the writer.
+\citet{moss2012science}, for example, found that science faculty rated identical CVs lower when a female name was attached.
+The warmth--competence distinction described by \citet{fiske2002model} helps explain why that kind of evaluation can take different forms: women are often stereotyped through warmth or communal traits, while men are more often associated with competence or agency.
+I use this distinction as a guide for measuring language in feedback.
+\citet{pietraszkiewicz2019big} provide dictionary-based tools for agency and communion in natural language, although those tools were not designed specifically for writing classrooms.
+
+\paragraph{Bias in language models.}
+Bias research in NLP gives this project its second starting point.
+Language technologies can reproduce social patterns even when no person is making an explicit discriminatory choice.
+\citet{bolukbasi2016man} showed that word embeddings encode gendered occupational stereotypes.
+In generative systems, \citet{wan2023kelly} found gendered patterns in LLM-generated recommendation letters, including more communal language in female-coded letters.
+\citet{kotek2023gender} documented occupational stereotypes in ChatGPT outputs.
+\citet{deshpande2023toxicity} showed that assigned personas can change the toxicity of model responses.
+\citet{gallegos2024bias} survey a broad range of bias and fairness methods for LLMs, from embedding probes to controlled generation audits.
+\citet{blodgett2020language} argue that bias studies should say clearly what they count as bias and why the measured behavior could be harmful.
+Section~\ref{sec:bias-statement} follows that recommendation.
+
+\paragraph{LLMs in writing classrooms.}
+\citet{kasneci2023chatgpt} describe both the promise and risk of ChatGPT-style systems in education.
+\citet{dai2023can} ask whether LLMs can provide useful feedback to students.
+What is still less clear is whether that feedback changes when the student is marked differently in the prompt.
+This study focuses on that narrower classroom question.
+
+% ============================================================
+\section{Methodology}
+\label{sec:method}
+% ============================================================
+
+\subsection{Stimulus Materials}
+
+The study used five stimulus essays written by first-year students, covering different topics, rhetorical modes, and levels of polish (Table~\ref{tab:essays}).
+The essays were written for this project by first-year students who were asked to produce particular kinds of drafts and to include some phrases likely to invite feedback from the models.
+The goal was not to collect naturally occurring classroom submissions, but to create plausible student drafts that could serve as controlled elicitation materials.
+The essays were kept verbatim, including spelling errors, grammar errors, run-on sentences, and uneven phrasing.
+This preserves the student-written texture of the drafts while still recognizing that the stimulus set was constructed for the study.
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{llll}
+\toprule
+\textbf{ID} & \textbf{Topic} & \textbf{Mode} & \textbf{Words} \\
+\midrule
+E1 & AI in academia & Argumentative & $\sim$250 \\
+E2 & Indian $\rightarrow$ US transition & Personal narrative & $\sim$350 \\
+E3 & SAT/ACT critique & Persuasive & $\sim$280 \\
+E4 & Social media algorithms & Expository & $\sim$290 \\
+E5 & Intl.\ student finances & Personal/argument. & $\sim$400 \\
+\bottomrule
+\end{tabular}
+\caption{Stimulus essays used in the experiment.}
+\label{tab:essays}
+\end{table}
+
+\subsection{Experimental Design}
+
+The experiment used a $2 \times 3 \times 5$ fully crossed design:
+
+\begin{itemize}
+    \item \textbf{Independent variable:} Student pronouns (2 levels: he/him, she/her)
+    \item \textbf{Models} (3 levels): OpenAI GPT-5.2, Anthropic Claude Sonnet 4.5, Google Gemini 3 Pro Preview
+    \item \textbf{Essays} (5 levels): E1--E5
+\end{itemize}
+
+Each cell was replicated 50 times at temperature $T = 0.7$, yielding $N = 2 \times 3 \times 5 \times 50 = 1{,}500$ responses.
+The temperature setting was meant to capture ordinary variation in model output rather than force a single deterministic answer.
+Because the study audits generated feedback, that variation is part of the object being studied.
+
+\subsection{Prompt Construction}
+
+The two conditions used identical prompts differing only in pronoun references:
+
+\smallskip
+\noindent\fbox{\parbox{0.95\columnwidth}{
+\small
+\textit{You are an experienced first-year college writing instructor. Read this draft by your student. The student uses \textbf{[he/him $|$ she/her]} pronouns. Provide a 3-paragraph feedback response focusing on \textbf{[his $|$ her]} argument, tone, and areas for improvement. Address the student directly.}
+
+\smallskip
+\textit{Draft: [essay text]}
+}}
+\smallskip
+
+The prompt provided no other information about the student (name, age, race, institution).
+The pronoun manipulation was the sole independent variable.
+
+\subsection{Infrastructure}
+
+Data collection ran on February 27, 2026 through the OpenRouter API gateway.
+The requested OpenRouter model strings were:
+\begin{itemize}
+    \item \texttt{openai/gpt-5.2}
+    \item \texttt{anthropic/claude-sonnet-4.5}
+    \item \texttt{google/gemini-3-pro-preview}
+\end{itemize}
+All requests were made with an asynchronous Python pipeline built with \texttt{aiohttp} and \texttt{asyncio}.
+An \texttt{asyncio.Semaphore(50)} limited concurrent connections, and exponential backoff through \texttt{tenacity} handled rate limiting (HTTP 429) and server errors (HTTP 5xx).
+Responses were logged to a local SQLite database as they arrived.
+Because OpenRouter is an API gateway, these model strings identify the requested models through that service; they do not provide independent access to provider-side training data or post-training details.
+
+\subsection{Analytical Framework}
+\label{sec:metrics}
+
+The analysis computed nine features per response:
+
+\begin{enumerate}
+    \item \textbf{Response length} (word count)
+    \item \textbf{Sentiment} (VADER compound, positive, and negative scores; \citealp{hutto2014vader})
+    \item \textbf{Lexical diversity} (Type-Token Ratio)
+    \item \textbf{Warmth vocabulary density} (per 100 words)---31-word lexicon drawn from \citet{gaucher2011evidence}. This lexicon was originally developed for job advertisements, so its meaning in pedagogical feedback may differ. I treat these measures as proxies rather than ground-truth indicators of tone.
+    \item \textbf{Competence vocabulary density} (per 100 words)---34-word lexicon drawn from \citet{pietraszkiewicz2019big}
+    \item \textbf{Hedging language density} (per 100 words)---14-word lexicon (e.g., \textit{perhaps}, \textit{might}, \textit{consider})
+    \item \textbf{Directive language density} (per 100 words)---17-word lexicon (e.g., \textit{must}, \textit{should}, \textit{ensure})
+\end{enumerate}
+
+Comparisons used two-sided Mann-Whitney $U$ tests, with Cohen's $d$ reported as an effect-size estimate.
+To reduce the chance of treating random fluctuations as findings, I applied Benjamini-Hochberg false discovery rate (FDR) correction \citep{benjamini1995controlling} separately to the nine global tests and to the 27 per-model tests ($3 \text{ models} \times 9 \text{ metrics}$).
+All $p$-values reported in the global and per-model tables are FDR-corrected $q$-values.
+I also used TF-IDF analysis at the unigram, bigram, and trigram level to look for condition-specific words and phrases.
+
+\paragraph{A note on replication structure.}
+The 50 replications per cell are repeated model outputs from the same prompt, not 50 different students or 50 different essays.
+This matters for interpretation.
+The design is useful because it shows how a model behaves across repeated generations under the same conditions, but it does not create the same kind of independence that a large human-subjects study would have.
+As a check on this issue, I fit linear mixed-effects models (LMMs) with condition as a fixed effect and essay as a random intercept for each of the eight FDR-surviving findings.
+Seven of eight effects remained significant under this check (Table~\ref{tab:mixed}); only Claude's compound sentiment effect ($\beta = +0.048$, $p = .233$) did not survive.
+This suggests that most reported effects are not only artifacts of repeatedly sampling the same five essays, although the small number of essays remains an important limitation.
+
+% ============================================================
+\section{Results}
+\label{sec:results}
+% ============================================================
+
+\subsection{Global Analysis}
+
+Across all three models together, she/her responses showed higher compound sentiment ($q = .010$, $d = -0.12$), higher positive sentiment ($q = .018$, $d = -0.13$), lower negative sentiment ($q = .018$, $d = +0.13$), and higher competence vocabulary density ($q = .010$, $d = -0.16$) after FDR correction (Table~\ref{tab:global}).
+The other global comparisons did not reach significance.
+The global table is useful, but it also hides an important point: the models did not all move in the same direction.
+For that reason, the per-model results are more informative than the aggregate alone.
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{lrrrrl}
+\toprule
+\textbf{Metric} & \textbf{He} & \textbf{She} & \textbf{$\Delta$} & \textbf{$q$} & \textbf{$d$} \\
+\midrule
+Length (words) & 369.1 & 369.4 & $-$0.3 & .349 & $-$0.01 \\
+Sentiment (comp.) & 0.767 & 0.822 & $-$0.055 & .010* & $-$0.12 \\
+Positive sent. & 0.141 & 0.144 & $-$0.003 & .018* & $-$0.13 \\
+Negative sent. & 0.079 & 0.075 & $+$0.004 & .018* & $+$0.13 \\
+TTR & 0.619 & 0.618 & $+$0.001 & .953 & $+$0.04 \\
+Warmth/100w & 0.544 & 0.541 & $+$0.003 & .855 & $+$0.01 \\
+Competence/100w & 1.021 & 1.089 & $-$0.068 & .010* & $-$0.16 \\
+Hedging/100w & 0.756 & 0.782 & $-$0.027 & .349 & $-$0.07 \\
+Directive/100w & 0.474 & 0.490 & $-$0.016 & .479 & $-$0.05 \\
+\bottomrule
+\end{tabular}
+\caption{Global analysis across all 1{,}500 responses. $q$-values are Benjamini-Hochberg corrected. *\,$q < .05$.}
+\label{tab:global}
+\end{table}
+
+\subsection{Per-Model Analysis}
+
+\paragraph{Anthropic Claude Sonnet 4.5} showed five condition differences after FDR correction (Table~\ref{tab:claude}).
+Claude wrote slightly longer feedback for she/her prompts ($d = -0.27$), and those responses had higher positive sentiment ($d = -0.24$).
+Compound sentiment was also higher for she/her in the Mann-Whitney analysis ($d = -0.10$), but this effect did not survive the mixed-effects check ($p = .233$), so I treat it more cautiously.
+In the other direction, he/him responses contained slightly more negative language ($d = +0.18$) and more warmth-coded vocabulary ($d = +0.21$).
+That last result was unexpected because it does not follow the common stereotype that warmth language is directed more often toward female-coded recipients.
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{lrrrrl}
+\toprule
+\textbf{Metric} & \textbf{He} & \textbf{She} & \textbf{$\Delta$} & \textbf{$q$} & \textbf{$d$} \\
+\midrule
+Length & 344.6 & 351.3 & $-$6.7 & .009 & $-$0.27 \\
+Sent.\ (comp.) & 0.745 & 0.793 & $-$0.048 & .007 & $-$0.10 \\
+Pos.\ sent. & 0.144 & 0.150 & $-$0.007 & .031 & $-$0.24 \\
+Neg.\ sent. & 0.092 & 0.088 & $+$0.004 & .033 & $+$0.18 \\
+Warmth/100w & 0.663 & 0.599 & $+$0.065 & .022 & $+$0.21 \\
+\bottomrule
+\end{tabular}
+\caption{Significant results for Claude Sonnet 4.5 ($n = 250$ per condition). $q$-values are BH-corrected across all 27 per-model tests. Only rows with $q < .05$ shown.}
+\label{tab:claude}
+\end{table}
+
+\paragraph{OpenAI GPT-5.2} showed three condition differences after FDR correction (Table~\ref{tab:gpt}).
+Unlike Claude, GPT-5.2 generated longer responses for he/him prompts ($d = +0.27$).
+For she/her prompts, it produced higher competence vocabulary density ($d = -0.27$) and higher hedging language density ($d = -0.29$).
+A fourth finding---marginally higher lexical diversity for she/her ($p_{\text{raw}} = .048$)---did not survive FDR correction ($q = .119$).
+
+The combination of competence language and hedging language is the most interesting GPT-5.2 result.
+I use the tentative phrase ``benevolent hedging'' for this pattern: the model seems to affirm competence while also softening the delivery.
+For example, a he/him response may use a direct phrase such as ``you've got a clear central claim,'' while a she/her response may frame advice through ``your argument is quite compelling---you might consider strengthening\ldots''.
+This label is interpretive, not a settled construct; it would need replication before it could carry more weight.
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{lrrrrl}
+\toprule
+\textbf{Metric} & \textbf{He} & \textbf{She} & \textbf{$\Delta$} & \textbf{$q$} & \textbf{$d$} \\
+\midrule
+Length & 425.4 & 417.5 & $+$7.9 & .007 & $+$0.27 \\
+Competence/100w & 1.000 & 1.088 & $-$0.088 & .022 & $-$0.27 \\
+Hedging/100w & 0.589 & 0.656 & $-$0.067 & .009 & $-$0.29 \\
+\bottomrule
+\end{tabular}
+\caption{Significant results for GPT-5.2 ($n = 250$ per condition). $q$-values are BH-corrected.}
+\label{tab:gpt}
+\end{table}
+
+\paragraph{Google Gemini 3 Pro Preview} showed no differences that survived FDR correction.
+Its only marginal raw result was response length ($p_{\text{raw}} = .039$, $d = -0.07$), and that did not survive correction ($q = .117$).
+In this experiment, Gemini was therefore the least sensitive to the pronoun manipulation on the measured features.
+
+\paragraph{Robustness: Mixed-Effects Models.}
+Table~\ref{tab:mixed} reports linear mixed-effects models (LMMs) for each FDR-surviving finding, with condition as a fixed effect and essay as a random intercept.
+Seven of eight effects remained significant in this check.
+This supports the main pattern, but it should not be read as a fully powered random-effects analysis because there are only five essays.
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{llrrrl}
+\toprule
+\textbf{Model} & \textbf{Metric} & \textbf{$\beta$} & \textbf{$z$} & \textbf{$p$} & \textbf{Sig} \\
+\midrule
+Claude & Length & $+$6.71 & 3.41 & $<$.001 & *** \\
+Claude & Pos.\ sent. & $+$0.007 & 3.01 & .003 & ** \\
+Claude & Neg.\ sent. & $-$0.004 & $-$2.47 & .014 & * \\
+Claude & Warmth/100w & $-$0.065 & $-$2.85 & .004 & ** \\
+Claude & Sent.\ (comp.) & $+$0.048 & 1.19 & .233 & n.s. \\
+\midrule
+GPT-5.2 & Length & $-$7.90 & $-$3.12 & .002 & ** \\
+GPT-5.2 & Competence/100w & $+$0.087 & 3.15 & .002 & ** \\
+GPT-5.2 & Hedging/100w & $+$0.067 & 3.49 & $<$.001 & *** \\
+\bottomrule
+\end{tabular}
+\caption{Mixed-effects robustness check. $\beta$ = estimated shift for She/Her condition; random intercept = essay. Seven of eight FDR-surviving findings remain significant.}
+\label{tab:mixed}
+\end{table}
+
+\subsection{Essay--Condition Interactions}
+
+Condition differences were not uniform across essay topics.
+Essay~5 (international student finances---a narrative involving vulnerability and emotional disclosure) showed the strongest per-essay effects across all models: sentiment divergence reached $d = -0.39$ ($p = .001$), and negative sentiment divergence reached $d = +0.43$ ($p < .001$).
+This suggests that essay content may interact with pronoun cues.
+In particular, models may respond differently when a draft invites personal or emotional recognition.
+Because this point comes from one essay, I treat it as a hypothesis for future work rather than a conclusion.
+
+\subsection{Phrasal Collocations}
+
+As a complement to the dictionary-based analysis, I computed bigram and trigram TF-IDF divergence between conditions.
+To test whether the divergence was larger than chance, I ran a permutation test ($n = 10{,}000$ iterations) for each model, shuffling condition labels and recomputing total absolute TF-IDF divergence.
+Claude showed significant phrasal divergence ($p < .001$, observed/expected ratio $= 1.52\times$).
+GPT-5.2 ($p = .190$) and Gemini ($p = .491$) did not show significant phrasal divergence.
+
+Representative high-divergence $n$-grams for Claude (the only model with significant phrasal divergence):
+
+\begin{itemize}
+    \item \textbf{She/her}: examples include ``dear student'' and ``compelling deeply personal,'' phrases that sound more affirming and personal.
+    \item \textbf{He/him}: examples include ``area improvement sentence'' and ``comma splice run,'' phrases that sound more focused on mechanical diagnosis.
+\end{itemize}
+
+These fragments should not be overread on their own.
+They do, however, suggest that Claude's condition differences appear not only in single-word counts but also in recurring feedback phrases.
+
+% ============================================================
+\section{Discussion}
+\label{sec:discussion}
+% ============================================================
+
+\subsection{What the Results Show}
+
+The main finding is that two of the three tested models changed their feedback in measurable ways when the student's stated pronouns changed.
+That does not mean the models reproduced a simple human stereotype.
+Claude's warmth result, for example, runs against the expectation that warmth-coded language would appear more often in she/her responses.
+GPT-5.2's pairing of competence language with hedging also does not map neatly onto the human feedback literature.
+These results are better understood as output-level patterns: the study can show what the models produced, but it cannot explain the internal mechanism that produced those responses.
+
+\subsection{Benevolent Hedging as a Working Term}
+
+GPT-5.2's simultaneous increase in competence vocabulary and hedging language for she/her prompts is the clearest interpretive finding in the paper.
+The pattern is related to, but not the same as, the ``benevolent sexism'' framework described by \citet{glick2001ambivalent}, where positive evaluations of women can be paired with protective or qualifying language.
+In a writing-feedback setting, the issue is not simply whether the feedback is positive or negative.
+The issue is the stance of the feedback: direct assertion in one condition, softened suggestion in another.
+Both students may receive useful revision advice, but the rhetorical posture of that advice can differ.
+For that reason, ``benevolent hedging'' is useful as a working term, but it should not be treated as a validated category until it is tested across more prompts, essays, and models.
+
+\subsection{Essay Content Matters}
+
+Essay~5 (vulnerable personal narrative) produced the strongest per-essay bias effects.
+This observation---drawn from a single essay---should be treated as preliminary, since it could reflect topic-specific, length-related, or idiosyncratic effects rather than a generalizable interaction.
+Still, it is worth noting because first-year writing courses often ask students to write from personal experience.
+If future work finds the same pattern, then emotionally vulnerable assignments may be an especially important place to audit automated feedback.
+
+\subsection{Practical Effect Sizes}
+
+All significant effects fell in the small range ($|d| = 0.10$--$0.29$).
+A student receiving a single piece of feedback would be unlikely to notice a difference.
+The concern is cumulative rather than dramatic.
+If a student receives automated feedback many times across a course, small differences in directness, encouragement, or hedging could add up.
+This paper does not prove that such accumulation happens; it only identifies a pattern that makes the question worth studying.
+
+\subsection{Implications for Writing Programs}
+
+The results argue against assuming that LLM feedback is identity-neutral by default.
+For writing programs that use automated feedback tools, the practical lesson is modest: test the tool before trusting it.
+That testing should include controlled prompt comparisons, multiple assignment types, and more than one model when possible.
+Pronoun-blind prompting may also be worth considering in situations where pronouns are not needed for the feedback task.
+These are precautionary suggestions based on a preliminary audit, not a complete policy framework.
+
+% ============================================================
+\section{Limitations}
+\label{sec:limitations}
+% ============================================================
+
+\textbf{Binary framing.}
+This study tested only he/him and she/her conditions.
+Future work should include they/them, neopronouns, and intersectional identity markers (race, disability status).
+
+\textbf{Narrow stimulus set and mixed-effects caveat.}
+The experiment used only five student-authored stimulus essays, which cannot represent the full range of first-year composition writing.
+This limitation has methodological as well as classroom implications: while I report mixed-effects models with essay as a random intercept (Table~\ref{tab:mixed}), five random-factor levels fall below the rule-of-thumb minimum (typically eight to ten) for stable variance-component estimation. The LMM results should therefore be read as a check against pure pseudo-replication, not as a fully powered random-effects analysis. The strongest per-essay effect, observed for Essay~5, is consistent with this concern.
+Future replications should expand the stimulus set substantially; I recommend at least 15--20 essays spanning topics, modes, and writer demographics.
+
+\textbf{Constructed stimuli.}
+The essays were written for this project rather than collected as ordinary classroom submissions.
+This made it possible to control topics and include phrases likely to elicit model feedback, but it also limits ecological validity.
+The results should therefore be read as evidence about model behavior under elicitation-oriented student-writing stimuli, not as a direct sample of all first-year composition feedback contexts.
+
+\textbf{Possible lexicon--content confound.}
+Several entries in the warmth lexicon (e.g., \textit{vulnerable}, \textit{personal}, \textit{emotional}, \textit{feeling}, \textit{heartfelt}) overlap thematically with the subject matter of Essay~5, which addresses the financial and emotional pressures faced by international students.
+Feedback that explicitly references the essay's topic (e.g., ``your personal account of vulnerability is moving'') would register as warmth-language hits even though the lexicon entries describe the essay's content rather than tone directed at the student.
+I did not perform a sentence-level adjudication separating references-to-content from references-to-student, so some warmth-related effects associated with Essay~5 may be partly driven by this confound.
+Future work should include a sentence-level coding procedure or replace the lexicon-based approach with a transformer-based stance classifier trained on pedagogical text.
+
+\textbf{Single prompt template.}
+The role prompt (``experienced first-year college writing instructor'') was held constant.
+Different persona specifications (``supportive tutor,'' ``rigorous editor,'' or pronoun-blind framing) may change the direction or size of the effects.
+The claim is therefore restricted to the specific prompt template used here.
+
+\textbf{Lexicon-based analysis.}
+The warmth, competence, hedging, and directive dictionaries capture explicit vocabulary but miss pragmatic and discourse-level framing.
+The warmth and competence lexicons were developed for job advertisements and general agency/communion measurement \citep{gaucher2011evidence,pietraszkiewicz2019big}; their construct validity in the pedagogical feedback domain has not been independently established.
+Annotation-based qualitative coding by domain experts would complement these automated measures and help validate whether lexicon hits correspond to perceived tone.
+
+\textbf{Sentiment tool.}
+VADER \citep{hutto2014vader} is a rule-based sentiment analyzer originally designed for social media text.
+Its applicability to the complex rhetorical structure of pedagogical feedback is uncertain. A transformer-based sentiment classifier fine-tuned on academic or pedagogical text would likely produce more reliable estimates and is a priority for future replications of this work.
+
+\textbf{Three-model comparison.}
+With only three models tested---one of which (Gemini) showed no surviving effects---the discussion of ``model-specific bias profiles'' mostly rests on a Claude--vs.--GPT contrast. The results should not be generalized to LLMs as a whole without broader model coverage.
+
+\textbf{No human baseline.}
+The study did not collect human instructor feedback on the same essays, so it cannot compare LLM feedback directly with human feedback.
+Whether these model differences are larger, smaller, or qualitatively different from human instructor behavior remains an open question.
+
+\textbf{Temporal instability.}
+Model behavior may change with version updates, fine-tuning, or alignment modifications.
+The results are specific to the model versions requested through OpenRouter on February 27, 2026 and may not replicate on later versions.
+
+% ============================================================
+\section{Conclusion}
+\label{sec:conclusion}
+% ============================================================
+
+This study found that two of three tested LLMs produced statistically distinguishable writing feedback when the only changed prompt variable was the student's stated pronouns.
+Eight differences survived Benjamini-Hochberg FDR correction, and seven of those eight remained significant in a mixed-effects check with essay as a random intercept.
+The models did not show one shared pattern: Claude showed a warmth inversion, GPT-5.2 showed the pattern I call benevolent hedging, and Gemini showed no surviving differentiation.
+All effects were small ($|d| \leq 0.29$), and the study is limited by its five-essay constructed stimulus set, single prompt template, lexicon-based measures, and lack of a human-instructor baseline.
+
+The strongest claim this paper can make is therefore modest but important: automated writing feedback should not be assumed to be neutral simply because it is generated by a model.
+If LLMs are used in writing classrooms, they should be audited with the same care that writing studies already asks us to bring to human feedback.
+The dataset, analysis pipeline, outlier dossier, and scripts are included so that other researchers can check these results and build stronger studies from them.
+
+% ============================================================
+\section{Bias Statement}
+\label{sec:bias-statement}
+% ============================================================
+
+Following \citet{blodgett2020language}, this section states what this paper means by bias and why the measured differences could matter.
+
+\textbf{How bias is defined here.} In this study, ``bias'' means statistically detectable differences in automatically measured text features between feedback responses generated for he/him and she/her prompt conditions, when all other prompt content is held constant. The features include response length, sentiment polarity, warmth vocabulary, competence vocabulary, hedging language, directive language, and phrasal collocations. This definition is deliberately narrow. I do not claim that any single feedback response is biased, and I do not claim that a model intends discrimination.
+
+\textbf{Why these behaviors could be harmful.} Writing feedback works partly through tone and stance. If one pronoun condition receives more direct correction while another receives more softened or affectively positive language, then students may be receiving different kinds of pedagogical address. Prior work in composition studies and educational psychology suggests that feedback directness, confidence, and support can shape self-efficacy, persistence, and writing development \citep{sommers1982responding,harber2012positive}. The possible harm is not located in one isolated response. It is located in repeated asymmetry across many feedback moments.
+
+\textbf{Whom could this harm?} The most direct concern is for students whose stated pronouns place them in a less useful or less direct feedback condition for a given system. Instructors and writing programs could also be harmed if they adopt automated feedback tools without understanding how those tools respond to student identity cues. The binary pronoun framing is itself a limitation of this study; non-binary students and students using neopronouns face questions this paper does not answer.
+
+% ============================================================
+\section{Ethics and Adverse Impacts}
+\label{sec:ethics}
+% ============================================================
+
+This study analyzes outputs from LLM APIs.
+The stimulus essays were written for this project by first-year students who gave verbal permission for the essays to be used and publicly released as part of the research materials.
+Names, course identifiers, institutional identifiers, and other direct identifiers are not linked to the released materials.
+Even though the essays were project-specific and de-identified, they are still student writing.
+For that reason, the released materials should be treated as sensitive educational data rather than as generic text.
+
+I see three main adverse-impact risks:
+
+First, reporting which models showed which differences could be misread as a ranking of model quality.
+The study cannot support that reading because it tested only one prompt template and five essays.
+
+Second, the dataset contains student-authored writing.
+Although the essays are de-identified and were written for this project with permission for release, sharing student writing always carries some residual privacy and dignity risk.
+For that reason, the released materials should not be used to evaluate or identify the original writers.
+
+Third, the controlled-pronoun method could be used to search for prompts that elicit biased responses.
+I judge that risk to be low because the observed effects are small and the method is more useful for auditing than for exploitation.
+The intended use of this work is critical evaluation of automated feedback systems, not model ranking or adversarial prompt construction.
+
+% ============================================================
+\section{Generative AI Usage Statement}
+\label{sec:genai}
+% ============================================================
+
+There are two different kinds of AI use in this project.
+First, AI is the object of study: the 1{,}500 feedback responses analyzed here were produced by OpenAI GPT-5.2, Anthropic Claude Sonnet 4.5, and Google Gemini 3 Pro Preview through the OpenRouter API.
+The prompts, requested model identifiers, sampling temperature, and generated responses are included in the project materials.
+
+Second, AI tools were used during the writing process.
+They were used for code review, proofreading, and copyediting support.
+The research question, study design, interpretation of the results, and final wording were reviewed and revised by the author.
+The author remains responsible for the claims made in the paper.
+
+% ============================================================
+\section{Data and Code Availability}
+\label{sec:data}
+% ============================================================
+
+To support replication and extension, the project materials include the following:
+
+The complete experimental dataset of 1{,}500 model responses is provided in SQLite format with columns for timestamp, model name, essay identifier, condition, and full response text. A derived CSV is also provided with precomputed text features: word count, character count, VADER sentiment scores, lexical diversity, and raw and per-100-word counts for warmth, competence, hedging, and directive vocabulary.
+
+The five student-authored stimulus essays are included verbatim, preserving original spelling and grammar, in plain text format.
+
+The full analysis pipeline is provided as a set of Python scripts: the OpenRouter experiment runner with concurrent execution and exponential backoff (\texttt{llm\_bias\_experiment.py}), the first-pass statistical analysis (\texttt{analyze\_bias.py}), the $n$-gram and outlier analysis (\texttt{deep\_analysis.py}), the FDR correction routine (\texttt{fdr\_correction.py}), and the mixed-effects and permutation-test checks (\texttt{robustness\_checks.py}).
+
+A qualitative dossier of twenty extreme-response examples (ten per condition) selected for high warmth--competence asymmetry is included to support future qualitative coding.
+
+The replication package is included as accompanying supplementary material. A permanent public archive link or DOI will be added when available. Inquiries regarding the dataset or pipeline may be directed to the corresponding author.
+
+% ============================================================
+% REFERENCES
+% ============================================================
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}

@@ -1,0 +1,21 @@
+cff-version: 1.2.0
+message: "If you use this repository, please cite the preprint and replication package."
+title: "When Pronouns Change the Comment: Auditing Gendered Patterns in LLM Writing Feedback"
+authors:
+  - family-names: "Madayag"
+    given-names: "Sophia"
+    affiliation: "Department of English & Modern Languages, Cal Poly Pomona"
+    email: "semadayag@cpp.edu"
+type: dataset
+date-released: "2026-05-08"
+keywords:
+  - "automated writing feedback"
+  - "first-year composition"
+  - "large language models"
+  - "gender bias"
+  - "pronouns"
+  - "AI in education"
+  - "writing studies"
+  - "digital humanities"
+license: "CC-BY-NC-4.0"
+abstract: "Replication package for a controlled audit study testing whether large language models produce different writing feedback when student pronouns are varied while essay content is held constant."
