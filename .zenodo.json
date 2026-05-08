@@ -1,0 +1,32 @@
+{
+  "creators": [
+    {
+      "name": "Madayag, Sophia",
+      "affiliation": "Department of English & Modern Languages, Cal Poly Pomona"
+    }
+  ],
+  "title": "When Pronouns Change the Comment: Auditing Gendered Patterns in LLM Writing Feedback",
+  "version": "1.0.0",
+  "upload_type": "dataset",
+  "access_right": "open",
+  "license": "cc-by-nc-4.0",
+  "language": "eng",
+  "description": "Replication package for a controlled audit study testing whether large language models produce different writing feedback when student pronouns are varied while essay content is held constant. The package includes the preprint PDF and LaTeX source, analysis code, student-authored stimulus essays, LLM-generated feedback responses, derived text features, and analysis reports.",
+  "keywords": [
+    "automated writing feedback",
+    "first-year composition",
+    "large language models",
+    "gender bias",
+    "pronouns",
+    "AI in education",
+    "writing studies",
+    "digital humanities"
+  ],
+  "related_identifiers": [
+    {
+      "identifier": "https://github.com/semadayag1/lm-pronoun-bias-audit",
+      "relation": "isSupplementTo",
+      "resource_type": "software"
+    }
+  ]
+}
