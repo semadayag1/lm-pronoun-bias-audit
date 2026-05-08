@@ -8,7 +8,7 @@ This repository contains the dataset, code, paper source, and supporting reports
 
 The study collected 1,500 model responses across a 2 x 3 x 5 design: two pronoun conditions, three models, five student-authored stimulus essays, and 50 repeated generations per cell. The essays were written for this project as controlled elicitation materials. After Benjamini-Hochberg FDR correction, eight statistically significant differences survived; seven of eight remained significant in mixed-effects models with essay as a random intercept.
 
-The paper is available at `paper/paper.pdf`. The LaTeX source and bibliography are in the same folder.
+The paper is available at `paper/paper.pdf`. The LaTeX source and bibliography are in the same folder. The replication package is archived on Zenodo at https://doi.org/10.5281/zenodo.20081530.
 
 ## Repository Structure
 
@@ -125,7 +125,7 @@ Paper, data, essays, and reports are released under the Creative Commons Attribu
 
 ## Citation
 
-Please cite the preprint if you use these materials. A provisional citation file is included in `CITATION.cff`; update it once the OSF Preprints URL and/or Zenodo DOI is available.
+Please cite the preprint if you use these materials. A citation file is included in `CITATION.cff`.
 
 ## Contact
 

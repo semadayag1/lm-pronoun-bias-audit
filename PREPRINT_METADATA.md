@@ -18,11 +18,11 @@ OSF Preprints
 
 ## Recommended Repository and Archive Workflow
 
-1. Create a public GitHub repository for this package.
-2. Connect the GitHub repository to Zenodo.
-3. Create a GitHub release after the package is final.
-4. Use the Zenodo DOI in the paper's data-availability statement and repository citation.
-5. Upload the final `paper/paper.pdf` to OSF Preprints.
+GitHub repository: https://github.com/semadayag1/lm-pronoun-bias-audit
+
+Zenodo archive, stable concept DOI: https://doi.org/10.5281/zenodo.20081530
+
+Use `paper/paper.pdf` for OSF Preprints.
 
 ## Disciplines / Subject Areas
 
